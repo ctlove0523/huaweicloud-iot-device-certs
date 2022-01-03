@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"math/big"
 	"net"
-	"os"
 	"time"
 )
 
@@ -231,68 +230,4 @@ func CreateVerificationCaCert(key *rsa.PrivateKey, ca []byte, code string) ([]by
 	cert, err := x509.CreateCertificate(rand.Reader, template, caCert, key.PublicKey, key)
 
 	return cert, err
-}
-
-func test() {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 4096)
-	if err != nil {
-		fmt.Errorf("create private key failed %s", err)
-		panic(err)
-	}
-	content := x509.MarshalPKCS1PrivateKey(privateKey)
-	block := &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: content,
-	}
-
-	file, err := os.Create("privateKey.key")
-	if err != nil {
-		panic(err)
-	}
-
-	err = pem.Encode(file, block)
-	if err != nil {
-		panic(err)
-
-	}
-
-	subject := pkix.Name{
-		Country:            []string{"China"},
-		Province:           []string{"guangdong"},
-		Locality:           []string{"shenzhen"},
-		Organization:       []string{"huawei"},
-		OrganizationalUnit: []string{"iot"},
-		CommonName:         "iotda",
-	}
-
-	max := new(big.Int).Lsh(big.NewInt(1), 128)
-	serialNumber, _ := rand.Int(rand.Reader, max)
-	template := &x509.Certificate{
-		SerialNumber: serialNumber,
-		Subject:      subject,
-		NotBefore:    time.Now(),
-		NotAfter:     time.Now().Add(365 * 24 * time.Hour),
-		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		IPAddresses:  []net.IP{net.ParseIP("127.0.0.1")},
-		IsCA:         true,
-	}
-	cert, err := x509.CreateCertificate(rand.Reader, template, template, &privateKey.PublicKey, privateKey)
-
-	block = &pem.Block{
-		Type:  "CERTIFICATE",
-		Bytes: cert,
-	}
-
-	file, err = os.Create("ca.pem")
-	if err != nil {
-		panic(err)
-	}
-
-	err = pem.Encode(file, block)
-	if err != nil {
-		panic(err)
-
-	}
-
 }
